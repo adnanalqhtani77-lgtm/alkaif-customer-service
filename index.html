@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#241044">
+  <title>خدمة عملاء بيت الكيف</title>
+  <style>
+    *{box-sizing:border-box}
+    body{
+      margin:0; min-height:100vh; display:grid; place-items:center;
+      padding:24px; color:#fff; font-family:Tahoma,Arial,sans-serif;
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(177,126,255,.24), transparent 48%),
+        linear-gradient(145deg,#120820,#281044 55%,#160b29);
+    }
+    .card{
+      width:min(100%,440px); text-align:center; padding:30px 24px 26px;
+      border:1px solid rgba(232,190,91,.48); border-radius:28px;
+      background:linear-gradient(160deg,rgba(255,255,255,.075),rgba(255,255,255,.025));
+      box-shadow:0 22px 70px rgba(0,0,0,.42), inset 0 1px rgba(255,255,255,.08);
+    }
+    .logo{
+      width:min(74%,260px); max-height:230px; object-fit:contain;
+      margin:0 auto 12px; display:block;
+      filter:drop-shadow(0 8px 18px rgba(238,183,55,.16));
+    }
+    .eyebrow{color:#e7c16a;letter-spacing:1px;font-size:13px;margin:0 0 8px}
+    h1{font-size:27px;margin:0 0 9px;color:#f4d58a}
+    .sub{color:#e5dced;line-height:1.9;font-size:15px;margin:0 auto 25px}
+    .actions{display:grid;gap:13px}
+    a.action{
+      min-height:62px; display:flex; align-items:center; justify-content:center; gap:12px;
+      padding:15px 18px; border-radius:16px; text-decoration:none; color:white;
+      font-weight:700; font-size:17px; transition:transform .15s,filter .15s;
+    }
+    a.action:active{transform:scale(.985)}
+    .call{background:linear-gradient(135deg,#b98936,#e8c36e);color:#24152d!important}
+    .whatsapp{background:linear-gradient(135deg,#168d58,#25b96e)}
+    .hint{font-size:12px;color:#c9bad7;margin:20px 0 0}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <img class="logo" src="logo.png" alt="شعار بيت الكيف">
+    <p class="eyebrow">ALKAIF HOUSE</p>
+    <h1>خدمة عملاء بيت الكيف</h1>
+    <p class="sub">نسعد بتواصلكم معنا. اختر الطريقة المناسبة للتواصل مع الإدارة.</p>
+    <div class="actions">
+      <a class="action call" href="tel:+966596078578" aria-label="اتصال مباشر بالإدارة">
+        <span aria-hidden="true">☎</span><span>اتصال بالإدارة</span>
+      </a>
+      <a class="action whatsapp" href="https://wa.me/966596078578" target="_blank" rel="noopener" aria-label="محادثة واتساب مع الإدارة">
+        <span aria-hidden="true">◉</span><span>مراسلة الإدارة عبر واتساب</span>
+      </a>
+    </div>
+    <p class="hint">نحن هنا لخدمتكم ونرحب باستفساراتكم وملاحظاتكم</p>
+  </main>
+</body>
+</html>
