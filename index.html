@@ -1,4 +1,4 @@
-
+```html
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
@@ -19,25 +19,11 @@
       padding:24px;
       color:#fff;
       font-family:Tahoma,Arial,sans-serif;
-      background:#190625;
-      position:relative;
-      isolation:isolate;
-    }
 
-    /* الخلفية: أصغر حجماً وأهدأ إضاءة */
-    body::before{
-      content:"";
-      position:fixed;
-      inset:0;
-      z-index:-1;
+      /* الخلفية البنفسجية والذهبية */
       background:
-        linear-gradient(
-          rgba(20,5,30,.38),
-          rgba(20,5,30,.38)
-        ),
-        url("background.png") center center / min(100%,700px) auto no-repeat;
-      opacity:.72;
-      pointer-events:none;
+        linear-gradient(rgba(25,3,39,.20),rgba(25,3,39,.20)),
+        url("background.png") center center / cover no-repeat fixed;
     }
 
     .card{
@@ -47,6 +33,7 @@
       border:1px solid rgba(232,190,91,.58);
       border-radius:28px;
 
+      /* بطاقة زجاجية شفافة */
       background:rgba(35,12,52,.68);
       backdrop-filter:blur(12px);
       -webkit-backdrop-filter:blur(12px);
@@ -128,15 +115,7 @@
     @media(max-width:480px){
       body{
         padding:18px;
-      }
-
-      body::before{
-        background:
-          linear-gradient(
-            rgba(20,5,30,.38),
-            rgba(20,5,30,.38)
-          ),
-          url("background.png") center center / min(100%,500px) auto no-repeat;
+        background-attachment:scroll;
       }
 
       .card{
@@ -192,3 +171,4 @@
 
 </body>
 </html>
+```
