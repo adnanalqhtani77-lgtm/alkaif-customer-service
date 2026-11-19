@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>إدارة خدمة العملاء - بيت الكيف</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}
+:root{--gold:#d9b56d;--panel:#211331;--border:#473456;--muted:#b8a9c6}
+body{margin:0;background:#160d21;color:#f6f0fa;font-family:Tahoma,Arial,sans-serif}
+header{padding:22px 30px;border-bottom:1px solid var(--border);background:#1d102e;display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap}
+.brand h1{margin:0;color:var(--gold);font-size:24px}.brand p{margin:7px 0 0;color:var(--muted);font-size:13px}
+button{border:0;border-radius:10px;padding:11px 16px;cursor:pointer;font-weight:bold;font-family:inherit}
+.gold-btn{background:linear-gradient(135deg,#b98c46,#e6c77d);color:#261733}
+.dark-btn{background:#38254e;color:white}
+#logoutBtn{display:none}
+.container{max-width:1500px;margin:auto;padding:24px}
+.login-box{max-width:420px;margin:70px auto;background:var(--panel);padding:28px;border:1px solid var(--border);border-radius:18px}
+input,select,textarea{width:100%;padding:11px;background:#170e23;color:white;border:1px solid var(--border);border-radius:9px;font-family:inherit;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--gold)}
+.login-box input{margin:9px 0}.login-box h2{color:var(--gold)}#loginMessage{color:#ffb5b5;font-size:13px}
+#dashboard{display:none}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:14px;margin-bottom:22px}
+.stat{background:var(--panel);border:1px solid var(--border);border-radius:15px;padding:20px}
+.stat small{color:var(--muted)}.stat strong{display:block;font-size:29px;color:var(--gold);margin-top:12px}
+.filters{background:var(--panel);border:1px solid var(--border);border-radius:15px;padding:16px;display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:10px;margin-bottom:18px}
+.table-wrap{overflow:auto;background:var(--panel);border:1px solid var(--border);border-radius:15px}
+table{width:100%;min-width:1150px;border-collapse:collapse}
+th,td{padding:12px;border-bottom:1px solid var(--border);text-align:right;vertical-align:top}
+th{color:var(--gold);background:#2a193e;position:sticky;top:0}td{font-size:13px}
+td input,td select{min-width:120px;font-size:12px}.reason-input{min-width:200px}.status-select{min-width:130px}
+.save-btn{background:var(--gold);color:#24142e;padding:9px 12px}
+.contact-badge{display:inline-block;padding:6px 9px;border-radius:20px;font-weight:bold}
+.call-badge{background:#5a4120;color:#f2d18a}.wa-badge{background:#145738;color:#b5f0ce}
+.empty{text-align:center;padding:35px;color:var(--muted)}
+#message{margin:12px 0;color:var(--gold)}
+.toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;gap:10px;flex-wrap:wrap}
+.toolbar h2{margin:0}
+.report-panel{background:var(--panel);border:1px solid var(--border);border-radius:15px;padding:18px;margin:0 0 20px}
+.report-controls{display:grid;grid-template-columns:1fr 1fr auto auto;gap:10px;align-items:end}
+.report-summary{display:flex;gap:12px;flex-wrap:wrap;margin-top:15px}
+.report-chip{background:#2a193e;border:1px solid var(--border);padding:12px 16px;border-radius:12px}
+.report-chip strong{color:var(--gold);font-size:20px;display:block;margin-top:6px}
+.report-panel h2{color:var(--gold);margin:0 0 14px}
+.report-result{margin-top:15px}
+@media(max-width:850px){.stats{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:1fr 1fr}.report-controls{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){header{padding:18px}.container{padding:14px}.stats{gap:8px}.stat{padding:14px}.stat strong{font-size:24px}.filters,.report-controls{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><h1>بيت الكيف | إدارة خدمة العملاء</h1><p>متابعة الاتصالات ورسائل العملاء</p></div>
+  <div>
+    <button class="dark-btn" id="refreshBtn" style="display:none">تحديث البيانات</button>
+    <button class="gold-btn" id="logoutBtn">تسجيل الخروج</button>
+  </div>
+</header>
+<div class="container">
+  <section class="login-box" id="loginBox">
+    <h2>دخول الإدارة</h2><p>سجّل دخولك لمتابعة طلبات التواصل</p>
+    <input id="email" type="email" placeholder="البريد الإلكتروني" autocomplete="username">
+    <input id="password" type="password" placeholder="كلمة المرور" autocomplete="current-password">
+    <button class="gold-btn" id="loginBtn" style="width:100%;margin-top:10px">تسجيل الدخول</button>
+    <p id="loginMessage"></p>
+  </section>
+  <section id="dashboard">
+    <div class="stats">
+      <div class="stat"><small>إجمالي التواصل</small><strong id="totalCount">0</strong></div>
+      <div class="stat"><small>اتصالات هاتفية</small><strong id="callCount">0</strong></div>
+      <div class="stat"><small>واتساب</small><strong id="whatsappCount">0</strong></div>
+      <div class="stat"><small>حالات جديدة</small><strong id="newCount">0</strong></div>
+    </div>
+
+    <section class="report-panel">
+      <h2>تقرير العمليات خلال فترة محددة</h2>
+      <div class="report-controls">
+        <div><label for="reportFrom">من تاريخ</label><input id="reportFrom" type="date"></div>
+        <div><label for="reportTo">إلى تاريخ</label><input id="reportTo" type="date"></div>
+        <button class="gold-btn" id="generateReportBtn">عرض التقرير</button>
+        <button class="dark-btn" id="exportReportBtn" disabled>تصدير CSV</button>
+      </div>
+      <div class="report-result" id="reportResult"></div>
+    </section>
+
+    <div class="toolbar"><h2 style="color:var(--gold)">سجل التواصل</h2><span id="message"></span></div>
+    <div class="filters">
+      <input id="searchInput" placeholder="بحث برقم العميل أو السبب أو الموظف">
+      <select id="branchFilter"><option value="">جميع الفروع</option></select>
+      <select id="typeFilter"><option value="">جميع وسائل التواصل</option><option value="call">اتصال</option><option value="whatsapp">واتساب</option></select>
+      <select id="statusFilter"><option value="">جميع الحالات</option><option value="جديد">جديد</option><option value="تم التواصل">تم التواصل</option><option value="جاري الحل">جاري الحل</option><option value="تم الحل">تم الحل</option></select>
+      <button class="dark-btn" id="clearFilters">مسح الفلاتر</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>التاريخ والوقت</th><th>الفرع</th><th>نوع التواصل</th><th>رقم العميل</th><th>سبب التواصل</th><th>الموظف</th><th>الحالة</th><th>حفظ</th></tr></thead>
+        <tbody id="recordsBody"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="emptyMessage" style="display:none">لا توجد عمليات تواصل مطابقة.</div>
+  </section>
+</div>
+<script>
+const SUPABASE_URL="https://jcfcxqkqgfahncpsawcf.supabase.co";
+const SUPABASE_KEY="sb_publishable_2Dgjy1SMu6jE_hEzy3YQ4Q_X-so_wYm";
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let allRecords=[];
+let reportRecords=[];
+const loginBox=document.getElementById("loginBox");
+const dashboard=document.getElementById("dashboard");
+const loginMessage=document.getElementById("loginMessage");
+const recordsBody=document.getElementById("recordsBody");
+const messageBox=document.getElementById("message");
+const statusOptions=["جديد","تم التواصل","جاري الحل","تم الحل"];
+const contactLabel=t=>t==="call"?"اتصال":"واتساب";
+const fmtDate=d=>d?new Date(d).toLocaleString("ar-SA"):"-";
+
+document.getElementById("loginBtn").addEventListener("click",login);
+document.getElementById("password").addEventListener("keydown",e=>{if(e.key==="Enter")login()});
+async function login(){
+ loginMessage.textContent="";
+ const email=document.getElementById("email").value.trim(),password=document.getElementById("password").value;
+ if(!email||!password){loginMessage.textContent="أدخل البريد الإلكتروني وكلمة المرور.";return}
+ const btn=document.getElementById("loginBtn");btn.disabled=true;btn.textContent="جاري الدخول...";
+ const {error}=await db.auth.signInWithPassword({email,password});
+ btn.disabled=false;btn.textContent="تسجيل الدخول";
+ if(error){loginMessage.textContent="تعذر تسجيل الدخول: "+error.message;return}
+ showDashboard();
+}
+async function showDashboard(){
+ loginBox.style.display="none";dashboard.style.display="block";
+ document.getElementById("logoutBtn").style.display="inline-block";
+ document.getElementById("refreshBtn").style.display="inline-block";
+ await loadRecords();
+}
+async function loadRecords(){
+ messageBox.textContent="جاري تحميل البيانات...";
+ const {data,error}=await db.from("customer_contact_clicks").select("*").order("created_at",{ascending:false});
+ if(error){messageBox.textContent="خطأ في تحميل البيانات: "+error.message;return}
+ allRecords=data||[];updateStats();populateBranches();renderRecords();
+ messageBox.textContent="تم تحديث البيانات";
+}
+function updateStats(){
+ document.getElementById("totalCount").textContent=allRecords.length;
+ document.getElementById("callCount").textContent=allRecords.filter(r=>r.contact_type==="call").length;
+ document.getElementById("whatsappCount").textContent=allRecords.filter(r=>r.contact_type==="whatsapp").length;
+ document.getElementById("newCount").textContent=allRecords.filter(r=>r.status==="جديد").length;
+}
+function populateBranches(){
+ const sel=document.getElementById("branchFilter"),old=sel.value;
+ const branches=[...new Set(allRecords.map(r=>r.branch_id).filter(Boolean))];
+ sel.innerHTML='<option value="">جميع الفروع</option>';
+ branches.forEach(b=>{const o=document.createElement("option");o.value=b;o.textContent="فرع "+b;sel.appendChild(o)});
+ sel.value=old;
+}
+function renderRecords(){
+ recordsBody.innerHTML="";
+ const search=document.getElementById("searchInput").value.trim().toLowerCase();
+ const branch=document.getElementById("branchFilter").value,type=document.getElementById("typeFilter").value,status=document.getElementById("statusFilter").value;
+ const filtered=allRecords.filter(r=>{
+  const txt=[r.customer_phone||"",r.call_reason||"",r.employee_name||"",r.branch_id||""].join(" ").toLowerCase();
+  return (!search||txt.includes(search))&&(!branch||r.branch_id===branch)&&(!type||r.contact_type===type)&&(!status||r.status===status);
+ });
+ document.getElementById("emptyMessage").style.display=filtered.length?"none":"block";
+ filtered.forEach((r,i)=>{
+  const tr=document.createElement("tr");
+  const contactClass=r.contact_type==="call"?"call-badge":"wa-badge";
+  tr.innerHTML=`<td>${i+1}</td><td>${fmtDate(r.created_at)}</td><td>${escapeHtml(r.branch_id||"غير محدد")}</td><td><span class="contact-badge ${contactClass}">${contactLabel(r.contact_type)}</span></td><td><input class="phone-input" value="${escapeHtml(r.customer_phone||"")}" placeholder="رقم العميل"></td><td><input class="reason-input" value="${escapeHtml(r.call_reason||"")}" placeholder="سبب التواصل"></td><td><input class="employee-input" value="${escapeHtml(r.employee_name||"")}" placeholder="اسم الموظف"></td><td><select class="status-select">${statusOptions.map(s=>`<option value="${s}" ${r.status===s?"selected":""}>${s}</option>`).join("")}</select></td><td><button class="save-btn">حفظ</button></td>`;
+  tr.querySelector(".save-btn").addEventListener("click",()=>saveRecord(r.id,tr));
+  recordsBody.appendChild(tr);
+ });
+}
+async function saveRecord(id,row){
+ const btn=row.querySelector(".save-btn");btn.disabled=true;btn.textContent="حفظ...";
+ const payload={customer_phone:row.querySelector(".phone-input").value.trim()||null,call_reason:row.querySelector(".reason-input").value.trim()||null,employee_name:row.querySelector(".employee-input").value.trim()||null,status:row.querySelector(".status-select").value,updated_at:new Date().toISOString()};
+ const {error}=await db.from("customer_contact_clicks").update(payload).eq("id",id);
+ btn.disabled=false;btn.textContent="حفظ";
+ if(error){alert("فشل الحفظ: "+error.message);return}
+ messageBox.textContent="تم حفظ التعديلات";await loadRecords();
+}
+["searchInput","branchFilter","typeFilter","statusFilter"].forEach(id=>document.getElementById(id).addEventListener("input",renderRecords));
+document.getElementById("clearFilters").addEventListener("click",()=>{
+ ["searchInput","branchFilter","typeFilter","statusFilter"].forEach(id=>document.getElementById(id).value="");renderRecords();
+});
+document.getElementById("refreshBtn").addEventListener("click",loadRecords);
+document.getElementById("logoutBtn").addEventListener("click",async()=>{
+ await db.auth.signOut();dashboard.style.display="none";loginBox.style.display="block";
+ document.getElementById("logoutBtn").style.display="none";document.getElementById("refreshBtn").style.display="none";
+});
+function escapeHtml(v){return String(v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;")}
+
+// Reports by inclusive date range (local dates converted to date boundaries)
+function dateFilteredRecords(){
+ const from=document.getElementById("reportFrom").value;
+ const to=document.getElementById("reportTo").value;
+ if(from&&to&&from>to){alert("تاريخ البداية يجب أن يكون قبل تاريخ النهاية.");return null}
+ return allRecords.filter(r=>{
+  const d=new Date(r.created_at);
+  if(from){const start=new Date(from+"T00:00:00");if(d<start)return false}
+  if(to){const end=new Date(to+"T23:59:59.999");if(d>end)return false}
+  return true;
+ });
+}
+document.getElementById("generateReportBtn").addEventListener("click",()=>{
+ const records=dateFilteredRecords();if(records===null)return;
+ reportRecords=records;
+ const calls=records.filter(r=>r.contact_type==="call").length;
+ const whatsapp=records.filter(r=>r.contact_type==="whatsapp").length;
+ const newCases=records.filter(r=>r.status==="جديد").length;
+ const solved=records.filter(r=>r.status==="تم الحل").length;
+ const branchCounts={};
+ records.forEach(r=>{const b=r.branch_id||"غير محدد";branchCounts[b]=(branchCounts[b]||0)+1});
+ const branchHtml=Object.entries(branchCounts).sort((a,b)=>b[1]-a[1]).map(([b,n])=>`<div class="report-chip"> ${escapeHtml(b)}<strong>${n}</strong></div>`).join("");
+ const reportRows=records.map((r,i)=>`<tr><td>${i+1}</td><td>${fmtDate(r.created_at)}</td><td>${escapeHtml(r.branch_id||"غير محدد")}</td><td>${contactLabel(r.contact_type)}</td><td>${escapeHtml(r.customer_phone||"")}</td><td>${escapeHtml(r.call_reason||"")}</td><td>${escapeHtml(r.employee_name||"")}</td><td>${escapeHtml(r.status||"")}</td></tr>`).join("");
+ document.getElementById("reportResult").innerHTML=`<div class="report-summary"><div class="report-chip">إجمالي العمليات<strong>${records.length}</strong></div><div class="report-chip">اتصالات<strong>${calls}</strong></div><div class="report-chip">واتساب<strong>${whatsapp}</strong></div><div class="report-chip">جديد<strong>${newCases}</strong></div><div class="report-chip">تم الحل<strong>${solved}</strong></div></div><h3>توزيع العمليات حسب الفرع</h3><div class="report-summary">${branchHtml||"لا توجد بيانات"}</div><h3>تفاصيل جميع العمليات خلال الفترة</h3><div class="table-wrap"><table style="min-width:950px"><thead><tr><th>#</th><th>التاريخ والوقت</th><th>الفرع</th><th>نوع التواصل</th><th>رقم العميل</th><th>سبب التواصل</th><th>الموظف</th><th>الحالة</th></tr></thead><tbody>${reportRows||'<tr><td colspan="8" class="empty">لا توجد عمليات في الفترة المحددة</td></tr>'}</tbody></table></div>`;
+ document.getElementById("exportReportBtn").disabled=records.length===0;
+});
+document.getElementById("exportReportBtn").addEventListener("click",()=>{
+ if(!reportRecords.length)return;
+ const columns=["id","created_at","branch_id","contact_type","customer_phone","call_reason","employee_name","status"];
+ const rows=[columns.map(csvCell).join(",")];
+ reportRecords.forEach(r=>rows.push(columns.map(c=>csvCell(c==="contact_type"?contactLabel(r[c]):r[c])).join(",")));
+ const blob=new Blob(["\uFEFF"+rows.join("\r\n")],{type:"text/csv;charset=utf-8"});
+ const url=URL.createObjectURL(blob),a=document.createElement("a");
+ a.href=url;a.download="alkaif-contact-report.csv";a.click();URL.revokeObjectURL(url);
+});
+function csvCell(value){return '"'+String(value??"").replace(/"/g,'""')+'"'}
+async function checkSession(){const {data}=await db.auth.getSession();if(data.session)showDashboard()}
+checkSession();
+</script>
+</body>
+</html>
