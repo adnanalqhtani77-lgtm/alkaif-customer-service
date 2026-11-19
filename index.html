@@ -319,14 +319,14 @@
 
     async function logContactClick(contactType, customerPhone) {
 
-      const payload = {
-        branch_id: branchId || null,
-        contact_type: contactTypeSafe(contactType = contactType),
-        customer_phone: customerPhone,
-        call_reason: null,
-        employee_name: null,
-        status: "جديد"
-      };
+const payload = {
+  branch_id: branchId || null,
+  contact_type: contactType,
+  customer_phone: customerPhone,
+  call_reason: null,
+  employee_name: null,
+  status: "جديد"
+};
 
       const response = await fetch(
         `${SUPABASE_URL}/rest/v1/${CONTACT_TABLE}`,
