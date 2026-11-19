@@ -64,7 +64,61 @@
       color:#f0e5f5;
       line-height:1.9;
       font-size:15px;
-      margin:0 auto 25px;
+      margin:0 auto 22px;
+    }
+
+    .phone-box{
+      margin-bottom:15px;
+      text-align:right;
+    }
+
+    .phone-box label{
+      display:block;
+      margin-bottom:9px;
+      color:#f4d58a;
+      font-size:14px;
+      font-weight:bold;
+    }
+
+    .phone-box input{
+      width:100%;
+      height:55px;
+      padding:0 16px;
+      border:1px solid rgba(232,190,91,.6);
+      border-radius:14px;
+      outline:none;
+      background:rgba(255,255,255,.10);
+      color:#fff;
+      font-size:17px;
+      text-align:center;
+      direction:ltr;
+      transition:.2s;
+    }
+
+    .phone-box input::placeholder{
+      color:rgba(255,255,255,.65);
+    }
+
+    .phone-box input:focus{
+      border-color:#e8c36e;
+      box-shadow:0 0 0 3px rgba(232,195,110,.15);
+    }
+
+    .phone-box input.invalid{
+      border-color:#ff7777;
+      box-shadow:0 0 0 3px rgba(255,119,119,.12);
+    }
+
+    .message{
+      display:none;
+      color:#ffd4d4;
+      font-size:13px;
+      margin:10px 0 0;
+      text-align:center;
+    }
+
+    .message.show{
+      display:block;
     }
 
     .actions{
@@ -84,11 +138,18 @@
       color:white;
       font-weight:700;
       font-size:17px;
-      transition:transform .15s,filter .15s;
+      transition:transform .15s,filter .15s,opacity .15s;
+      cursor:pointer;
+      border:0;
     }
 
     a.action:active{
       transform:scale(.985);
+    }
+
+    a.action.loading{
+      opacity:.65;
+      pointer-events:none;
     }
 
     .call{
@@ -137,6 +198,24 @@
       نسعد بتواصلكم معنا . اختر الطريقة المناسبة للتواصل معنا .
     </p>
 
+    <!-- رقم العميل -->
+    <div class="phone-box">
+      <label for="customerPhone">رقم هاتفك</label>
+
+      <input
+        type="tel"
+        id="customerPhone"
+        inputmode="tel"
+        autocomplete="tel"
+        placeholder="05xxxxxxxx"
+        maxlength="15"
+      >
+
+      <p class="message" id="phoneMessage">
+        يرجى إدخال رقم هاتفك أولاً.
+      </p>
+    </div>
+
     <div class="actions">
 
       <a class="action call"
@@ -178,83 +257,180 @@
     const urlParams = new URLSearchParams(window.location.search);
     const branchId = urlParams.get("branch");
 
-    // تسجيل عملية التواصل
-    async function logContactClick(contactType) {
+    // العناصر
+    const phoneInput = document.getElementById("customerPhone");
+    const phoneMessage = document.getElementById("phoneMessage");
+    const callButton = document.querySelector(".call");
+    const whatsappButton = document.querySelector(".whatsapp");
+
+    // ==========================================
+    // تنسيق رقم الهاتف السعودي
+    // ==========================================
+
+    function normalizeSaudiPhone(phone) {
+
+      let number = phone.replace(/\D/g, "");
+
+      // 05xxxxxxxx
+      if (/^05\d{8}$/.test(number)) {
+        return "966" + number.substring(1);
+      }
+
+      // 9665xxxxxxxx
+      if (/^9665\d{8}$/.test(number)) {
+        return number;
+      }
+
+      // 5xxxxxxxx
+      if (/^5\d{8}$/.test(number)) {
+        return "966" + number;
+      }
+
+      return null;
+    }
+
+    // إخفاء التنبيه
+    function hideMessage() {
+      phoneMessage.classList.remove("show");
+      phoneInput.classList.remove("invalid");
+    }
+
+    // إظهار تنبيه إدخال الرقم
+    function showPhoneMessage() {
+      phoneMessage.textContent = "يرجى إدخال رقم هاتفك أولاً.";
+      phoneMessage.classList.add("show");
+      phoneInput.classList.add("invalid");
+      phoneInput.focus();
+    }
+
+    // تنبيه رقم غير صحيح
+    function showInvalidPhone() {
+      phoneMessage.textContent = "يرجى إدخال رقم هاتف صحيح.";
+      phoneMessage.classList.add("show");
+      phoneInput.classList.add("invalid");
+      phoneInput.focus();
+    }
+
+    phoneInput.addEventListener("input", hideMessage);
+
+    // ==========================================
+    // تسجيل عملية التواصل في Supabase
+    // ==========================================
+
+    async function logContactClick(contactType, customerPhone) {
 
       const payload = {
         branch_id: branchId || null,
-        contact_type: contactType
+        contact_type: contactTypeSafe(contactType = contactType),
+        customer_phone: customerPhone,
+        call_reason: null,
+        employee_name: null,
+        status: "جديد"
       };
+
+      const response = await fetch(
+        `${SUPABASE_URL}/rest/v1/${CONTACT_TABLE}`,
+        {
+          method: "POST",
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`,
+            "Content-Type": "application/json",
+            "Prefer": "return=minimal"
+          },
+          body: JSON.stringify(payload)
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Contact logging failed:", errorText);
+        throw new Error("فشل تسجيل العملية");
+      }
+
+      return true;
+    }
+
+    // ==========================================
+    // التحقق من الرقم وتسجيل العملية
+    // ==========================================
+
+    async function prepareContact(contactType) {
+
+      hideMessage();
+
+      const rawPhone = phoneInput.value.trim();
+
+      if (!rawPhone) {
+        showPhoneMessage();
+        return null;
+      }
+
+      const normalizedPhone = normalizeSaudiPhone(rawPhone);
+
+      if (!normalizedPhone) {
+        showInvalidPhone();
+        return null;
+      }
+
+      // منع الضغط المتكرر
+      callButton.classList.add("loading");
+      whatsappButton.classList.add("loading");
 
       try {
 
-        const response = await fetch(
-          `${SUPABASE_URL}/rest/v1/${CONTACT_TABLE}`,
-          {
-            method: "POST",
-            headers: {
-              "apikey": SUPABASE_KEY,
-              "Authorization": `Bearer ${SUPABASE_KEY}`,
-              "Content-Type": "application/json",
-              "Prefer": "return=minimal"
-            },
-            body: JSON.stringify(payload),
-            keepalive: true
-          }
-        );
+        // تسجيل البيانات أولاً
+        await logContactClick(contactType, normalizedPhone);
 
-        if (!response.ok) {
-          console.error(
-            "Contact logging failed:",
-            await response.text()
-          );
-        }
+        return normalizedPhone;
 
       } catch (error) {
-        console.error("Supabase connection error:", error);
+
+        phoneMessage.textContent = "تعذر تسجيل بياناتك، يرجى المحاولة مرة أخرى.";
+        phoneMessage.classList.add("show");
+
+        return null;
+
+      } finally {
+
+        callButton.classList.remove("loading");
+        whatsappButton.classList.remove("loading");
+
       }
     }
 
     // ==========================================
-    // Call button
+    // الاتصال
     // ==========================================
-
-    const callButton = document.querySelector(".call");
 
     callButton.addEventListener("click", async function(event) {
 
       event.preventDefault();
 
-      const phoneLink = this.href;
+      const phone = await prepareContact("call");
 
-      // تسجيل العملية قبل الانتقال
-      await Promise.race([
-        logContactClick("call"),
-        new Promise(resolve => setTimeout(resolve, 1200))
-      ]);
+      if (!phone) return;
 
-      // فتح الاتصال حتى لو فشل التسجيل
-      window.location.href = phoneLink;
+      window.location.href = "tel:+966538174054";
 
     });
 
     // ==========================================
-    // WhatsApp button
+    // واتساب
     // ==========================================
 
-    const whatsappButton = document.querySelector(".whatsapp");
-
-    whatsappButton.addEventListener("click", function(event) {
+    whatsappButton.addEventListener("click", async function(event) {
 
       event.preventDefault();
 
-      const whatsappLink = this.href;
+      const phone = await prepareContact("whatsapp");
 
-      // فتح واتساب مباشرة حتى لا يتم حظر النافذة
-      window.open(whatsappLink, "_blank");
+      if (!phone) return;
 
-      // تسجيل العملية في الخلفية
-      logContactClick("whatsapp");
+      window.open(
+        "https://wa.me/966538174054",
+        "_blank"
+      );
 
     });
 
